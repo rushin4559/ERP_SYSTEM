@@ -2,123 +2,144 @@
 
 A simple authentication and user management service with role-based access and audit logging.
 
----
+-----
 
-## 🛠 Setup
+## 🛠️ Setup
 
-1. Clone repo & install dependencies:
-   ```bash
-   npm install
-Create MySQL DB and tables:
+1.  **Clone repo & install dependencies:**
+    ```bash
+    git clone https://github.com/your-username/your-repo-name.git
+    cd your-repo-name
+    npm install
+    ```
+2.  **Create MySQL DB and tables:**
+    ```bash
+    mysql -u root -p < authdb.sql
+    ```
+3.  **Configure `.env` file:**
+    Create a `.env` file in the project root and add the following:
+    ```ini
+    DB_HOST=localhost
+    DB_USER=root
+    DB_PASSWORD=yourpassword
+    DB_NAME=authdb
+    JWT_SECRET=supersecret
+    ```
+4.  **Start server:**
+    ```bash
+    npm start
+    ```
 
-bash
-Copy code
-mysql -u root -p < authdb.sql
-Configure .env file in project root:
+-----
 
-ini
-Copy code
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=yourpassword
-DB_NAME=authdb
-JWT_SECRET=supersecret
-Start server:
+## 🗄️ Database Schema
 
-bash
-Copy code
-npm start
-🗄 Database Schema
-users
+### `users`
 
-id (INT, PK, AUTO_INCREMENT)
+  - `id` (INT, PK, AUTO\_INCREMENT)
+  - `username` (VARCHAR, UNIQUE)
+  - `password_hash` (TEXT)
+  - `role` (ENUM: `'admin', 'user'`)
+  - `created_at` (TIMESTAMP DEFAULT CURRENT\_TIMESTAMP)
 
-username (VARCHAR, UNIQUE)
+### `audit_logs`
 
-password_hash (TEXT)
+  - `id` (INT, PK, AUTO\_INCREMENT)
+  - `user_id` (INT, FK → `users.id`)
+  - `action` (VARCHAR)
+  - `ip_address` (VARCHAR)
+  - `created_at` (TIMESTAMP DEFAULT CURRENT\_TIMESTAMP)
 
-role (ENUM: 'admin','user')
+-----
 
-created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+## 🔑 Auth Routes
 
-audit_logs
+### `POST /auth/login`
 
-id (INT, PK, AUTO_INCREMENT)
+  - **Description:** Authenticates a user and returns a JWT token.
+  - **Body:**
+    ```json
+    { 
+      "username": "admin", 
+      "password": "admin123" 
+    }
+    ```
+  - **Response:** JWT token
 
-user_id (INT, FK → users.id)
+### `POST /auth/logout`
 
-action (VARCHAR)
+  - **Description:** The logout functionality is handled by the frontend, which simply deletes the JWT token from the browser's storage.
 
-ip_address (VARCHAR)
+-----
 
-created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+## 👤 User Routes (Protected)
 
-🔑 Auth Routes
-Login
-POST /auth/login
-Body:
+### `PUT /user/profile`
 
-json
-Copy code
-{ "username": "admin", "password": "admin123" }
-Response: JWT token
+  - **Description:** Updates the authenticated user's profile.
+  - **Headers:** `Authorization: Bearer <token>`
+  - **Body:**
+    ```json
+    { 
+      "username": "newname" 
+    }
+    ```
 
-Logout
-POST /auth/logout
-(optional, frontend usually handles by deleting token)
+### `PUT /user/change-password`
 
-👤 User Routes
-Update Profile
-PUT /user/profile
-Headers:
-Authorization: Bearer <token>
-Body:
+  - **Description:** Allows the authenticated user to change their password.
+  - **Headers:** `Authorization: Bearer <token>`
+  - **Body:**
+    ```json
+    { 
+      "currentPassword": "oldpass", 
+      "newPassword": "newpass" 
+    }
+    ```
 
-json
-Copy code
-{ "username": "newname" }
-Change Password
-PUT /user/change-password
-Headers:
-Authorization: Bearer <token>
-Body:
+-----
 
-json
-Copy code
-{ "currentPassword": "oldpass", "newPassword": "newpass" }
-👑 Admin Routes
-Create User
-POST /admin/create-user
-Headers:
-Authorization: Bearer <admin-token>
-Body:
+## 👑 Admin Routes (Admin Access Only)
 
-json
-Copy code
-{ "username": "user1", "password": "pass123", "role": "user" }
-List Users
-GET /admin/users
-Headers:
-Authorization: Bearer <admin-token>
+### `POST /admin/create-user`
 
-Update User
-PUT /admin/update-user/:id
-Headers:
-Authorization: Bearer <admin-token>
-Body:
+  - **Description:** Creates a new user with a specified role.
+  - **Headers:** `Authorization: Bearer <admin-token>`
+  - **Body:**
+    ```json
+    { 
+      "username": "user1", 
+      "password": "pass123", 
+      "role": "user" 
+    }
+    ```
 
-json
-Copy code
-{ "username": "newname", "role": "admin" }
-Delete User
-DELETE /admin/delete-user/:id
-Headers:
-Authorization: Bearer <admin-token>
+### `GET /admin/users`
 
-📝 Notes
-JWT tokens are stateless. Logout = frontend deletes token.
+  - **Description:** Retrieves a list of all users.
+  - **Headers:** `Authorization: Bearer <admin-token>`
 
-Audit logs automatically track user actions.
+### `PUT /admin/update-user/:id`
 
-Only admin role can manage users.
+  - **Description:** Updates a user's information by their ID.
+  - **Headers:** `Authorization: Bearer <admin-token>`
+  - **Body:**
+    ```json
+    { 
+      "username": "newname", 
+      "role": "admin" 
+    }
+    ```
 
+### `DELETE /admin/delete-user/:id`
+
+  - **Description:** Deletes a user by their ID.
+  - **Headers:** `Authorization: Bearer <admin-token>`
+
+-----
+
+## 📝 Notes
+
+  - **JWT tokens are stateless**, so there is no server-side "logout" mechanism.
+  - Audit logs are automatically created to track user actions.
+  - Only users with the **`admin` role** can access the admin routes.

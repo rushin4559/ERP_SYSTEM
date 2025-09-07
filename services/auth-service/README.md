@@ -13,10 +13,16 @@ A simple authentication and user management service with role-based access and a
     npm install
     ```
 2.  **Create MySQL DB and tables:**
+    The `scripts/authdb.sql` file contains the necessary commands to create the database and tables. Run the following command:
     ```bash
-    mysql -u root -p < authdb.sql
+    mysql -u root -p < scripts/authdb.sql
     ```
-3.  **Configure `.env` file:**
+3.  **Create the first admin user:**
+    After setting up the database, you'll need an initial user with admin privileges. Run the `scripts/createAdmin.js` file to create the first admin user:
+    ```bash
+    node scripts/createAdmin.js
+    ```
+4.  **Configure `.env` file:**
     Create a `.env` file in the project root and add the following:
     ```ini
     DB_HOST=localhost
@@ -25,7 +31,7 @@ A simple authentication and user management service with role-based access and a
     DB_NAME=authdb
     JWT_SECRET=supersecret
     ```
-4.  **Start server:**
+5.  **Start server:**
     ```bash
     npm start
     ```
@@ -143,3 +149,4 @@ A simple authentication and user management service with role-based access and a
   - **JWT tokens are stateless**, so there is no server-side "logout" mechanism.
   - Audit logs are automatically created to track user actions.
   - Only users with the **`admin` role** can access the admin routes.
+  - The **`scripts` folder** contains essential setup files, including `authdb.sql` for database creation and `createAdmin.js` for creating the initial admin user.

@@ -8,19 +8,19 @@ A simple authentication and user management service with role-based access and a
 
 1.  **Clone repo & install dependencies:**
     ```bash
-    git clone https://github.com/your-username/your-repo-name.git
-    cd your-repo-name
+    git clone https://github.com/rushitest4559/ERP_SYSTEM.git
+    cd ERP_SYSTEM
     npm install
     ```
 2.  **Create MySQL DB and tables:**
-    The `scripts/authdb.sql` file contains the necessary commands to create the database and tables. Run the following command:
+    The `src/scripts/authdb.sql` file contains the necessary commands to create the database and tables. Run the following command:
     ```bash
-    mysql -u root -p < scripts/authdb.sql
+    mysql -u root -p < src/scripts/authdb.sql
     ```
 3.  **Create the first admin user:**
     After setting up the database, you'll need an initial user with admin privileges. Run the `scripts/createAdmin.js` file to create the first admin user:
     ```bash
-    node scripts/createAdmin.js
+    node src/scripts/createAdmin.js
     ```
 4.  **Configure `.env` file:**
     Create a `.env` file in the project root and add the following:

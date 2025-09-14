@@ -68,7 +68,7 @@ async function start() {
     await conn.query("SELECT 1");
     conn.release();
     console.log("✅ MySQL Database connected successfully!");
-    const server = app.listen(PORT, () =>
+    const server = app.listen(PORT, '0.0.0.0', () =>
       console.log(`Auth Service running on port ${PORT}`)
     );
 

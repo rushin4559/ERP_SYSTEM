@@ -8,6 +8,7 @@ const {
   updateUser,
   deleteUser
 } = require("../controllers/adminController");
+const { getLogs, exportLogs } = require("../controllers/logController");
 
 // POST /admin/create-user
 router.post("/create-user",
@@ -35,5 +36,17 @@ router.delete("/delete-user/:id",
   audit("DELETE_USER"),
   deleteUser
 );
+
+// GET /admin/logs   👈 NEW ROUTE
+router.get("/logs",
+  requireAuth, requireAdmin,
+  getLogs
+);
+
+router.get("/logs/export",
+  requireAuth, requireAdmin,
+  exportLogs
+);
+
 
 module.exports = router;

@@ -1,0 +1,20 @@
+{
+  "name": "@myorg/shared-db",
+  "version": "1.0.0",
+  "description": "Shared database connection utilities",
+  "main": "index.js",
+  "type": "commonjs",
+  "license": "UNLICENSED",
+  "keywords": ["database", "mysql", "connection", "pool"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myorg/myrepo.git",
+    "directory": "libs/shared-db"
+  },
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "mysql2": "^3.2.0"
+  }
+}

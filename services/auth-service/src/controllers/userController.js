@@ -1,5 +1,4 @@
-const bcrypt = require("bcryptjs");
-const pool = require("../db"); // Postgres connection
+const { getDB } = require("@myorg/shared-db")
 const { comparePassword, hashPassword } = require("../utils/hash");
 
 // PUT /user/profile → update own username
@@ -12,6 +11,7 @@ async function updateProfile(req, res) {
   }
 
   try {
+    const pool = getDB();
     // check if username already exists
     const [exists] = await pool.query(
       "SELECT id FROM users WHERE username = ? AND id <> ?",
@@ -45,6 +45,7 @@ async function changePassword(req, res) {
   }
 
   try {
+    const pool = getDB();
     // get current hash
     const [rows] = await pool.query(
       "SELECT password_hash FROM users WHERE id = ?",

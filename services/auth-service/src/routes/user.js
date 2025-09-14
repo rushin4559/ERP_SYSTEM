@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { requireAuth } = require("../middleware/auth");
-const { audit } = require("../middleware/audit");
+const { requireAuth } = require("@myorg/shared-auth");
+const { audit } = require("@myorg/shared-audit");
 const { updateProfile, changePassword } = require("../controllers/userController");
 
 // PUT /user/profile → update own username

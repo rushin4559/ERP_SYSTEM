@@ -1,8 +1,7 @@
 
 const jwt = require("jsonwebtoken");
-const pool = require("../db"); // postgres connection
+const {getDB} = require("@myorg/shared-db");
 const { comparePassword } = require("../utils/hash");
-const { logAction } = require("../middleware/audit");
 
 // POST /auth/login
 async function login(req, res) {
@@ -12,6 +11,7 @@ async function login(req, res) {
     return res.status(400).json({ error: "Username and password required" });
   }
   try {
+    const pool = getDB();
     // find user (MySQL style)
     const [rows] = await pool.query("SELECT * FROM users WHERE username = ?", [username]);
     if (rows.length === 0) {
@@ -32,8 +32,6 @@ async function login(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
-
-    await logAction(user.id, "LOGIN_SUCCESS", req.ip); // ✅ explicit log
 
     return res.json({
       message: "Login successful",

@@ -1,4 +1,15 @@
-const pool = require("../db");
+const dotenv = require("dotenv");
+dotenv.config();
+
+const { initDB } = require("@myorg/shared-db")
+
+// 1. init pool once
+const pool = initDB({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASS || "Keshrushi@45",
+  database: process.env.DB_NAME || "erpdb",
+});
 const { hashPassword } = require("../utils/hash");
 
 (async () => {

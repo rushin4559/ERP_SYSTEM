@@ -1,13 +1,28 @@
-// index.js (CommonJS)
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
+
 const authRoutes = require("./src/routes/auth.js");
 const adminRoutes = require("./src/routes/admin.js");
 const userRoutes = require("./src/routes/user.js");
-const pool = require("./src/db.js");
 
-dotenv.config();
+const { initDB } = require("@myorg/shared-db");
+const { initAudit } = require("@myorg/shared-audit");
+
+// 1. init pool once
+const pool = initDB({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME
+});
+
+// 2. give pool to audit
+initAudit(pool);
+
+
 const app = express();
 
 app.use(cors());

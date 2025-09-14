@@ -1,5 +1,4 @@
-const bcrypt = require("bcryptjs");
-const pool = require("../db");
+const { getDB } = require("@myorg/shared-db")
 const { hashPassword } = require("../utils/hash");
 
 // POST /admin/create-user
@@ -15,6 +14,7 @@ async function createUser(req, res) {
   }
 
   try {
+    const pool = getDB();
     // check if username already exists
     const [exists] = await pool.query("SELECT id FROM users WHERE username = ?", [username]);
     if (exists.length > 0) {
@@ -48,6 +48,7 @@ async function createUser(req, res) {
 // GET /admin/users
 async function listUsers(req, res) {
   try {
+    const pool = getDB();
     // select only safe fields (no password hash!)
     const [rows] = await pool.query(
       "SELECT id, username, role, created_at FROM users ORDER BY created_at DESC"
@@ -76,6 +77,7 @@ async function updateUser(req, res) {
   }
 
   try {
+    const pool = getDB();
     // check if user exists
     const [existing] = await pool.query("SELECT id FROM users WHERE id = ?", [userId]);
     if (existing.length === 0) {
@@ -133,6 +135,7 @@ async function deleteUser(req, res) {
   const userId = req.params.id;
 
   try {
+    const pool = getDB();
     // check if user exists
     const [existing] = await pool.query("SELECT id, username FROM users WHERE id = ?", [userId]);
     if (existing.length === 0) {

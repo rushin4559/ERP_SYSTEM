@@ -1,0 +1,24 @@
+{
+  "name": "@myorg/shared-audit",
+  "version": "1.0.0",
+  "description": "Audit logging utilities shared across microservices",
+  "main": "index.js",
+  "type": "commonjs",
+  "license": "UNLICENSED",
+  "keywords": ["audit", "logging", "mysql2"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myorg/myrepo.git",
+    "directory": "libs/shared-audit"
+  },
+  "scripts": {
+    "start": "node index.js",   
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "mysql2": "^3.2.0"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0"
+  }
+}

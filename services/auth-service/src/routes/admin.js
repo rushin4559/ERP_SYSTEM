@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { requireAuth, requireAdmin } = require("../middleware/auth");
-const { audit } = require("../middleware/audit");
+const { requireAuth, requireAdmin } = require("@myorg/shared-auth");
+const { audit } = require("@myorg/shared-audit");
 const {
   createUser,
   listUsers,

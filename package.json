@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "workspaces": [
+    "libs/*",
+    "services/*"
+  ],
+  "scripts": {
+    "create-admin": "node services/auth-service/src/scripts/createAdmin.js"
+  }
+}

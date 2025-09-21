@@ -1,5 +1,5 @@
 // src/api/user.js
-import axios from "./axios";
+import axios from "../axios";
 
 // List all users
 export const fetchUsers = async () => {

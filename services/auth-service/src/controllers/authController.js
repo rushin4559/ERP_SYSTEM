@@ -15,7 +15,7 @@ async function login(req, res) {
     // find user (MySQL style)
     const [rows] = await pool.query("SELECT * FROM users WHERE username = ?", [username]);
     if (rows.length === 0) {
-      return res.status(401).json({ error: "Invalid username or password" });
+      return res.status(400).json({ error: "Invalid username or password" });
     }
 
     const user = rows[0];
@@ -23,14 +23,14 @@ async function login(req, res) {
     // check password
     const match = await comparePassword(password, user.password_hash);
     if (!match) {
-      return res.status(401).json({ error: "Invalid username or password" });
+      return res.status(400).json({ error: "Invalid username or password" });
     }
 
     // generate JWT
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "1m" }
     );
 
     return res.json({

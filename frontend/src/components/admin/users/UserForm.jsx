@@ -1,17 +1,16 @@
 import { useState, useEffect } from "react";
-import { createUser, updateUser } from "../../../api/user";
+import { createUser, updateUser } from "../../../api/admin/user";
 import { toast } from "react-toastify";
 
 export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {
   const [form, setForm] = useState({ username: "", password: "", role: "" });
   const [loading, setLoading] = useState(false);
 
-  // जर update असेल तर initialData पासून values भरायचे
   useEffect(() => {
     if (initialData) {
       setForm({
         username: initialData.username || "",
-        password: "", // update करताना password ठेवणार नाही
+        password: "", // do not prefill password
         role: initialData.role || "",
       });
     } else {
@@ -19,59 +18,62 @@ export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {
     }
   }, [initialData]);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
 
-    try {
-      if (initialData) {
-        // update
-        await updateUser(initialData.id, {
-          username: form.username,
-          role: form.role,
-        });
-        toast.success("User updated successfully!");
-      } else {
-        // create
-        await createUser(form);
-        toast.success("User created successfully!");
-      }
-
-      onSuccess(); // refresh table
-      onClose();   // modal बंद कर
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Something went wrong");
-    } finally {
-      setLoading(false);
+  // जर role admin असेल तर आधी confirm विचार
+  if (form.role === "admin") {
+    const confirmed = window.confirm(
+      "⚠️ You are assigning 'Admin' role. This is sensitive. Are you sure?"
+    );
+    if (!confirmed) {
+      return; // cancel कर
     }
-  };
+  }
 
-  const isDisabled =
-    !form.username || (!initialData && !form.password) || !form.role;
+  setLoading(true);
+  try {
+    if (initialData) {
+      await updateUser(initialData.id, { username: form.username, role: form.role });
+      toast.success("User updated successfully!");
+    } else {
+      await createUser(form);
+      toast.success("User created successfully!");
+    }
+    onSuccess();
+    onClose();
+  } catch (err) {
+    toast.error(err.response?.data?.error || "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
-  if (!isOpen) return null; // modal बंद असेल तर काहीच दाखवू नको
+  const isDisabled = !form.username || (!initialData && !form.password) || !form.role;
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
-        <h2 className="text-xl font-semibold mb-4 text-center">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8">
+        <h2 className="text-2xl font-semibold mb-6 text-center text-gray-800">
           {initialData ? "Update User" : "Create User"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Username */}
           <input
             type="text"
             name="username"
             placeholder="Username"
             value={form.username}
             onChange={handleChange}
-            className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
 
+          {/* Password */}
           {!initialData && (
             <input
               type="password"
@@ -79,33 +81,35 @@ export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
             />
           )}
 
+          {/* Role */}
           <select
             name="role"
             value={form.role}
             onChange={handleChange}
-            className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           >
             <option value="">Select role</option>
             <option value="admin">Admin</option>
             <option value="user">User</option>
           </select>
 
-          <div className="flex justify-end gap-3">
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 mt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 rounded-lg"
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isDisabled || loading}
-              className={`px-4 py-2 rounded-lg text-white ${
+              className={`px-4 py-2 rounded-lg text-white text-sm font-medium transition ${
                 isDisabled || loading
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-blue-600 hover:bg-blue-700"

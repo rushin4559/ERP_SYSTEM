@@ -4,30 +4,34 @@ const ExcelJS = require("exceljs");     // Excel साठी
 exports.getLogs = async (req, res) => {
   try {
     const pool = getDB();
-    const { page = 1, limit = 20, search, status, service, from, to, sort } = req.query;
+    const { page = 1, limit = 20, username, status, from, to, sort } = req.query;
 
-    // base filters
+    // Base filters
     let where = " WHERE 1=1";
-    let params = [];
+    const params = [];
 
-    if (search) {
-      where += " AND (al.action LIKE ? OR al.service LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+    // Username filter
+    if (username) {
+      where += " AND u.username LIKE ?";
+      params.push(`%${username}%`);
     }
+
+    // Status filter: success = 200, failure = all others
     if (status) {
-      where += " AND al.status = ?";
-      params.push(status);
+      if (status === "success") {
+        where += " AND al.status = 200";
+      } else if (status === "failure") {
+        where += " AND al.status != 200";
+      }
     }
-    if (service) {
-      where += " AND al.service = ?";
-      params.push(service);
-    }
+
+    // Date range filter
     if (from && to) {
       where += " AND al.created_at BETWEEN ? AND ?";
       params.push(from, to);
     }
 
-    // Count query
+    // Count total logs for pagination
     const [countRows] = await pool.execute(
       `SELECT COUNT(*) as total 
        FROM audit_logs al 
@@ -38,7 +42,7 @@ exports.getLogs = async (req, res) => {
     const total = countRows[0].total;
 
     // Sorting (safe)
-    const allowedCols = ["created_at", "action", "service", "status"];
+    const allowedCols = ["created_at", "action", "status"];
     let orderBy = "al.created_at DESC";
     if (sort) {
       const [col, dir] = sort.split(":");
@@ -48,18 +52,31 @@ exports.getLogs = async (req, res) => {
     }
 
     // Pagination
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    // Final query
     const sql = `
       SELECT al.*, u.username 
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.id
       ${where}
       ORDER BY ${orderBy}
-      LIMIT ${Number(limit)} OFFSET ${Number(offset)}
+      LIMIT ${limitNum} OFFSET ${offset}
     `;
+
+    console.log("SQL:", sql, "Params:", params);
+
     const [rows] = await pool.execute(sql, params);
 
-    res.json({ page: Number(page), limit: Number(limit), total, data: rows });
+    res.json({
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages: Math.ceil(total / limitNum),
+      data: rows,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch logs" });
@@ -69,42 +86,52 @@ exports.getLogs = async (req, res) => {
 exports.exportLogs = async (req, res) => {
   try {
     const pool = getDB();
-    const { search, status, service, from, to, format = "csv" } = req.query;
+    const { username, status, from, to, format = "csv" } = req.query;
 
+    // Base SQL
     let sql = `
-      SELECT al.id, al.user_id, u.username, al.action, al.service, al.status, al.created_at
+      SELECT al.id, al.user_id, u.username, al.action, al.status, al.created_at
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.id
       WHERE 1=1
     `;
-    let params = [];
+    const params = [];
 
-    if (search) {
-      sql += " AND (al.action LIKE ? OR al.service LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+    // Username filter
+    if (username) {
+      sql += " AND u.username LIKE ?";
+      params.push(`%${username}%`);
     }
+
+    // Status filter: success = 200, failure = all others
     if (status) {
-      sql += " AND al.status = ?";
-      params.push(status);
+      if (status === "success") {
+        sql += " AND al.status = 200";
+      } else if (status === "failure") {
+        sql += " AND al.status != 200";
+      }
     }
-    if (service) {
-      sql += " AND al.service = ?";
-      params.push(service);
-    }
+
+    // Date range filter
     if (from && to) {
       sql += " AND al.created_at BETWEEN ? AND ?";
       params.push(from, to);
     }
 
+    // Order by most recent
     sql += " ORDER BY al.created_at DESC";
 
     const [rows] = await pool.execute(sql, params);
 
+    if (rows.length === 0) {
+      return res.status(200).send("No logs found for the selected filters.");
+    }
+
     if (format === "excel") {
-      // Excel
+      // Export as Excel
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet("Audit Logs");
-      sheet.columns = Object.keys(rows[0] || {}).map(col => ({ header: col, key: col }));
+      sheet.columns = Object.keys(rows[0]).map(col => ({ header: col, key: col }));
       rows.forEach(r => sheet.addRow(r));
 
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -120,7 +147,6 @@ exports.exportLogs = async (req, res) => {
       res.setHeader("Content-Disposition", "attachment; filename=audit_logs.csv");
       res.send(csv);
     }
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to export logs" });

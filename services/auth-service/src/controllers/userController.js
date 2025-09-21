@@ -58,7 +58,7 @@ async function changePassword(req, res) {
     const user = rows[0];
     const match = await comparePassword(currentPassword, user.password_hash);
     if (!match) {
-      return res.status(401).json({ error: "Current password incorrect" });
+      return res.status(400).json({ error: "Current password incorrect" });
     }
 
     const newHash = await hashPassword(newPassword);

@@ -1,6 +1,6 @@
 
 const jwt = require("jsonwebtoken");
-const {getDB} = require("@myorg/shared-db");
+const { getDB } = require("@myorg/shared-db");
 const { comparePassword } = require("../utils/hash");
 
 // POST /auth/login
@@ -25,6 +25,12 @@ async function login(req, res) {
     if (!match) {
       return res.status(400).json({ error: "Invalid username or password" });
     }
+
+    // --- THE SIMPLEST FIX ---
+    // Set the user object on the request. 
+    // The audit middleware will read this when res.on("finish") is called.
+    req.user = { id: user.id, username: user.username, role: user.role };
+    // -------------------------
 
     // generate JWT
     const token = jwt.sign(

@@ -2,10 +2,10 @@ import React, { Suspense, lazy, useState } from "react";
 
 // Lazy load dashboards
 const UsersDashboard = lazy(() => import("../components/admin/Users/UserTable"));
-const LogsDashboard = lazy(() => import("../components/admin/logs/LogTable"));
+const LogsDashboard = lazy(() => import("../components/admin/audits/LogTable"));
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeTab, setActiveTab] = useState("logs");
 
   const tabs = [
     { key: "users", label: "Users" },
@@ -38,8 +38,8 @@ export default function AdminPage() {
       </div>
 
       {/* Dashboard content */}
-      <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6">
-        <Suspense fallback={<div className="text-center py-20 text-gray-500">Loading...</div>}>
+      <div className="">
+        <Suspense fallback={<div className="min-h-screen bg-gray-100 font-inter">Loading...</div>}>
           {activeTab === "users" && <UsersDashboard />}
           {activeTab === "logs" && <LogsDashboard />}
         </Suspense>

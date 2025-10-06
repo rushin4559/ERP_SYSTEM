@@ -1,44 +1,43 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/Home";
-import Admin from "../pages/Admin";
 import Login from "../pages/Login";
 import Profile from "../pages/Profile";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
+import Customers from "../dashboards/Customers";
+import Users from "../dashboards/Users";
+import Logs from "../dashboards/Logs";
 
 export default function AppRoutes() {
     const token = localStorage.getItem("token");
     return (
         <Routes>
-
-            {/* Root path redirect */}
-            <Route
-                path="/"
-                element={
-                    token ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />
-                }
-            />
-
+            <Route path="/" element={token ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
-
             <Route
-                path="/home" z
+                path="/home"
                 element={
                     <ProtectedRoute>
                         <Home />
                     </ProtectedRoute>
                 }
             />
-
             <Route
-                path="/admin"
+                path="/admin/logs"
                 element={
                     <AdminRoute>
-                        <Admin />
+                        <Logs />
                     </AdminRoute>
                 }
             />
-
+            <Route
+                path="/admin/users"
+                element={
+                    <AdminRoute>
+                        <Users />
+                    </AdminRoute>
+                }
+            />
             <Route
                 path="/profile"
                 element={
@@ -47,8 +46,16 @@ export default function AppRoutes() {
                     </ProtectedRoute>
                 }
             />
-
+            <Route
+                path="/customers"
+                element={
+                    <ProtectedRoute>
+                        <Customers />
+                    </ProtectedRoute>
+                }
+            />
             <Route path="*" element={<h1 className="text-center text-red-500">404 Not Found</h1>} />
         </Routes>
+
     );
 }

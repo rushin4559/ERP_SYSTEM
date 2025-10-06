@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { createUser, updateUser } from "../../../api/admin/user";
+import { createUser, updateUser } from "../../../api/authadmin/user";
 import { toast } from "react-toastify";
 
 export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {

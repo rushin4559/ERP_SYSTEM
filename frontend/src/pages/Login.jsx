@@ -32,7 +32,7 @@ export default function Login() {
       const role = user?.role;
 
       // redirect based on role
-      if (role === "admin") navigate("/admin", { replace: true });
+      if (role === "admin") navigate("/home", { replace: true });
       else navigate("/home", { replace: true });
     } catch (err) {
       // backend error message (e.g. "Invalid username or password")

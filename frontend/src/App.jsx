@@ -3,7 +3,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import { useAuth } from "./context/AuthContext";
-import Navbar from "./layouts/Navbar";
+import Navbar from "./layouts/Navbar/Navbar";
 
 function App() {
   const { isAuthenticated } = useAuth();

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import { changePasswordApi } from "../api/profile";
+import { changePasswordApi } from "../api/authadmin/profile";
 
 export default function Profile() {
   const { user } = useAuth();

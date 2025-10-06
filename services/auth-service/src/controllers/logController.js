@@ -5,6 +5,16 @@ exports.getLogs = async (req, res) => {
   try {
     const pool = getDB();
     const { page = 1, limit = 20, username, status, from, to, sort } = req.query;
+    console.log("Received query parameters:", req.query);
+    console.log("parsed parameters:", {
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      username,
+      status,
+      from,
+      to,
+      sort
+    });
 
     // Base filters
     let where = " WHERE 1=1";

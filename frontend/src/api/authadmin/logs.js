@@ -1,8 +1,9 @@
 // src/api/logs.js
-import axios from "../axios";
+import axios from "./axios";
 
 export async function getLogs(params = {}) {
   // params: { page, limit, search, status, service, from, to, sort }
+  console.log("params received in getLogs:", params);
   const res = await axios.get("/admin/logs", { params });
   console.log("Logs fetched:", res.data);
   return res.data; // { page, limit, total, data: [...] }

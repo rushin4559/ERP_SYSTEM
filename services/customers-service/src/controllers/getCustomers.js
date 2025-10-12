@@ -26,8 +26,8 @@ module.exports = async function getCustomersController(req, res) {
       created_at_max,
       updated_at_min,
       updated_at_max,
-      sort_by = "created_at",
-      order = "asc",
+      sort_by = "updated_at",
+      order = "desc",
     } = req.query;
 
     const offset = (page - 1) * limit;

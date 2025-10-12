@@ -38,22 +38,44 @@ export const deleteMultipleCustomers = async (ids) => {
 export const exportCustomersToCsv = async (filters = {}) => {
   const res = await customerApi.get('/customers/export', {
     params: filters,
-    responseType: 'blob', // Important: treat response as blob for file download
+    responseType: 'blob',
   });
 
-  // Create a blob URL
+  const shortFilters = filtersToShortString(filters);
+  const filename = `customers_${shortFilters || 'all'}_${Date.now()}.csv`;
+
   const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
-  // Create a link element to trigger download
   const link = document.createElement('a');
   link.href = url;
-  // Set file name with current timestamp
-  link.setAttribute('download', `customers_export_${Date.now()}.csv`);
+  link.setAttribute('download', filename);
   document.body.appendChild(link);
   link.click();
-  // Cleanup
   link.remove();
   window.URL.revokeObjectURL(url);
 
-  // Optionally return true on success
   return true;
 };
+
+
+function filtersToShortString(filters) {
+  // You can customize keys and shorten values as needed
+  // Example: Take some keys and show first letter + value or abbreviation
+  const parts = [];
+
+  if (filters.customer_name) {
+    parts.push(`cn-${filters.customer_name.substring(0, 5)}`); // customer_name first 5 chars
+  }
+  if (filters.state_name) {
+    parts.push(`st-${filters.state_name.substring(0, 3)}`); // state_name first 3 chars
+  }
+  // Add other filters similarly: date ranges, etc.
+  if (filters.created_at_min) {
+    parts.push(`cmin-${filters.created_at_min.replace(/-/g, '')}`); // remove dashes from date
+  }
+  if (filters.created_at_max) {
+    parts.push(`cmax-${filters.created_at_max.replace(/-/g, '')}`);
+  }
+  // Add more keys if relevant...
+
+  return parts.join('_');
+}

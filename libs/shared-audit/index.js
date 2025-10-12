@@ -33,12 +33,14 @@ function audit(action, tableName = "audit_logs") {
       }
 
       try {
-        const userId = req.user ? req.user.id : null; // from shared-auth
+        const username = req.user ? req.user.username : null; // get username from authenticated user
+        console.log(`Auditing action: ${action} by user: ${username}`);
         await pool.query(
-          `INSERT INTO ${tableName} (user_id, action, service, status, created_at) 
+          `INSERT INTO ${tableName} (username, action, service, status, created_at) 
            VALUES (?, ?, ?, ?, NOW())`,
-          [userId, action, req.baseUrl, res.statusCode]
+          [username, action, req.baseUrl, res.statusCode]
         );
+        console.log(`Audit log created for action: ${action} by user: ${username}`);
       } catch (err) {
         console.error("Audit log failed:", err.message);
       }

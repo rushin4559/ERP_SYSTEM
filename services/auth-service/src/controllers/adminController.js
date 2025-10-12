@@ -155,4 +155,32 @@ async function deleteUser(req, res) {
   }
 }
 
-module.exports = { createUser, listUsers, updateUser, deleteUser };
+async function deleteMultipleUsers(req, res) {
+  const { ids } = req.body; // expect { ids: [1,2,3] }
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "Invalid request" });
+  }
+
+  try {
+    const pool = getDB();
+    // check if users exist
+    const [existing] = await pool.query("SELECT id, username FROM users WHERE id IN (?)", [ids]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: "No users found" });
+    }
+
+    // delete users
+    await pool.query("DELETE FROM users WHERE id IN (?)", [ids]);
+
+    return res.json({
+      message: "Users deleted successfully",
+      deletedUsers: existing
+    });
+  } catch (err) {
+    console.error("Delete multiple users error:", err.message);
+    return res.status(500).json({ error: "Server error" });
+  }
+}
+
+module.exports = { createUser, listUsers, updateUser, deleteUser, deleteMultipleUsers };

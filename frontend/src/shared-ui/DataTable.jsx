@@ -1,5 +1,5 @@
-import React from "react";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import React, { useState } from "react";
+import { FaEdit, FaTrash, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
 export default function DataTable({
   columns = [],
@@ -14,7 +14,13 @@ export default function DataTable({
   onDelete,
   rowKey = "id",
   noDataMessage = "No records found.",
+  onSortChange, // new callback for sort changes
+  initialSortBy = null, // initial sorted column
+  initialOrder = "asc", // initial sort order
 }) {
+  const [sortBy, setSortBy] = useState(initialSortBy);
+  const [order, setOrder] = useState(initialOrder);
+
   const handleSelect = (id) => {
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter((i) => i !== id));
@@ -29,6 +35,32 @@ export default function DataTable({
     } else {
       setSelectedIds(data.map((item) => item[rowKey]));
     }
+  };
+
+  const toggleSort = (key) => {
+    let newOrder = "asc";
+    if (sortBy === key && order === "asc") {
+      newOrder = "desc";
+    }
+    setSortBy(key);
+    setOrder(newOrder);
+    if (onSortChange) {
+      onSortChange(key, newOrder);
+    }
+  };
+
+  const renderSortIcon = (key) => {
+    if (key !== "created_at" && key !== "updated_at") {
+      return null;
+    }
+    if (sortBy !== key) {
+      return <FaSort className="inline ml-1 text-gray-400" />;
+    }
+    return order === "asc" ? (
+      <FaSortUp className="inline ml-1 text-gray-600" />
+    ) : (
+      <FaSortDown className="inline ml-1 text-gray-600" />
+    );
   };
 
   if (loading) {
@@ -51,11 +83,7 @@ export default function DataTable({
         <FaEdit size={16} />
       </button>
       <button
-        onClick={() => {
-          if (onDelete && window.confirm(`Are you sure you want to delete this item?`)) {
-            onDelete(item[rowKey]);
-          }
-        }}
+        onClick={() => onDelete && onDelete(item[rowKey])}
         className="p-2 text-red-600 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition"
         aria-label={`Delete ${item[rowKey]}`}
         type="button"
@@ -84,9 +112,17 @@ export default function DataTable({
             {columns.map(({ header, key, className = "" }) => (
               <th
                 key={key}
-                className={`p-3 border-b border-gray-300 text-left font-semibold text-gray-900 text-base ${className}`}
+                onClick={key === "created_at" || key === "updated_at" ? () => toggleSort(key) : undefined}
+                className={`p-3 border-b border-gray-300 text-left font-semibold text-gray-900 text-base cursor-pointer ${
+                  (key === "created_at" || key === "updated_at") ? "select-none" : ""
+                } ${className}`}
+                aria-sort={
+                  sortBy === key ? (order === "asc" ? "ascending" : "descending") : "none"
+                }
+                tabIndex={key === "created_at" || key === "updated_at" ? 0 : undefined}
               >
                 {header}
+                {renderSortIcon(key)}
               </th>
             ))}
             {showActions && <th className="p-3 border-b border-gray-300 text-center w-28">Actions</th>}
@@ -108,10 +144,9 @@ export default function DataTable({
               )}
               {columns.map(({ key, className = "" }) => (
                 <td key={key} className={`p-3 border-b border-gray-200 text-sm text-gray-700 ${className}`}>
-                  {/* Format dates if value is date string */}
                   {item[key] instanceof Date
                     ? item[key].toLocaleString()
-                    : (typeof item[key] === "string" && /^\d{4}-\d{2}-\d{2}T/.test(item[key]))
+                    : typeof item[key] === "string" && /^\d{4}-\d{2}-\d{2}T/.test(item[key])
                     ? new Date(item[key]).toLocaleString()
                     : item[key] ?? "-"}
                 </td>

@@ -6,7 +6,8 @@ const {
   createUser,
   listUsers,
   updateUser,
-  deleteUser
+  deleteUser,
+  deleteMultipleUsers
 } = require("../controllers/adminController");
 const { getLogs, exportLogs } = require("../controllers/logController");
 
@@ -37,6 +38,13 @@ router.delete("/delete-user/:id",
   deleteUser
 );
 
+// DELETE /admin/delete-multiple-users 👈 NEW ROUTE
+router.delete("/delete-multiple-users",
+  requireAuth, requireAdmin,
+  audit("DELETE_MULTIPLE_USERS"),
+  deleteMultipleUsers
+);
+
 // GET /admin/logs   👈 NEW ROUTE
 router.get("/logs",
   requireAuth, requireAdmin,
@@ -45,6 +53,7 @@ router.get("/logs",
 
 router.get("/logs/export",
   requireAuth, requireAdmin,
+  audit("EXPORT_LOGS"),
   exportLogs
 );
 

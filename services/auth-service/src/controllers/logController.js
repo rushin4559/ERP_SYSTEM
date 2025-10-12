@@ -4,29 +4,24 @@ const ExcelJS = require("exceljs");     // Excel साठी
 exports.getLogs = async (req, res) => {
   try {
     const pool = getDB();
-    const { page = 1, limit = 20, username, status, from, to, sort } = req.query;
-    console.log("Received query parameters:", req.query);
-    console.log("parsed parameters:", {
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10),
-      username,
-      status,
-      from,
-      to,
-      sort
-    });
+    const { page = 1, limit = 20, username, status, action, from, to, sort } = req.query;
 
     // Base filters
     let where = " WHERE 1=1";
     const params = [];
 
-    // Username filter
+    // Username filter directly on audit_logs.username (not joined)
     if (username) {
-      where += " AND u.username LIKE ?";
+      where += " AND al.username LIKE ?";
       params.push(`%${username}%`);
     }
 
-    // Status filter: success = 200, failure = all others
+    if (action) {
+      where += " AND al.action LIKE ?";
+      params.push(`%${action}%`);
+    }
+
+    // Status filter
     if (status) {
       if (status === "success") {
         where += " AND al.status = 200";
@@ -43,15 +38,12 @@ exports.getLogs = async (req, res) => {
 
     // Count total logs for pagination
     const [countRows] = await pool.execute(
-      `SELECT COUNT(*) as total 
-       FROM audit_logs al 
-       LEFT JOIN users u ON al.user_id = u.id
-       ${where}`,
+      `SELECT COUNT(*) as total FROM audit_logs al ${where}`,
       params
     );
     const total = countRows[0].total;
 
-    // Sorting (safe)
+    // Sorting 
     const allowedCols = ["created_at", "action", "status"];
     let orderBy = "al.created_at DESC";
     if (sort) {
@@ -61,22 +53,19 @@ exports.getLogs = async (req, res) => {
       }
     }
 
-    // Pagination
+    // Pagination calculations
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
     const offset = (pageNum - 1) * limitNum;
 
-    // Final query
+    // Final query selecting username directly from audit_logs
     const sql = `
-      SELECT al.*, u.username 
+      SELECT al.* 
       FROM audit_logs al
-      LEFT JOIN users u ON al.user_id = u.id
       ${where}
       ORDER BY ${orderBy}
       LIMIT ${limitNum} OFFSET ${offset}
     `;
-
-    console.log("SQL:", sql, "Params:", params);
 
     const [rows] = await pool.execute(sql, params);
 
@@ -93,43 +82,47 @@ exports.getLogs = async (req, res) => {
   }
 };
 
+
 exports.exportLogs = async (req, res) => {
   try {
     const pool = getDB();
-    const { username, status, from, to, format = "csv" } = req.query;
+    const { username, status, action, from, to, format = "csv" } = req.query;
 
-    // Base SQL
+    // Base SQL without join; username in audit_logs now
     let sql = `
-      SELECT al.id, al.user_id, u.username, al.action, al.status, al.created_at
-      FROM audit_logs al
-      LEFT JOIN users u ON al.user_id = u.id
+      SELECT id, action, service, status, created_at, username
+      FROM audit_logs
       WHERE 1=1
     `;
     const params = [];
 
     // Username filter
     if (username) {
-      sql += " AND u.username LIKE ?";
+      sql += " AND username LIKE ?";
       params.push(`%${username}%`);
     }
+    if (action) {
+      sql += " AND action LIKE ?";
+      params.push(`%${action}%`);
+    }
 
-    // Status filter: success = 200, failure = all others
+    // Status filter
     if (status) {
       if (status === "success") {
-        sql += " AND al.status = 200";
+        sql += " AND status = 200";
       } else if (status === "failure") {
-        sql += " AND al.status != 200";
+        sql += " AND status != 200";
       }
     }
 
-    // Date range filter
+    // Date filter
     if (from && to) {
-      sql += " AND al.created_at BETWEEN ? AND ?";
+      sql += " AND created_at BETWEEN ? AND ?";
       params.push(from, to);
     }
 
     // Order by most recent
-    sql += " ORDER BY al.created_at DESC";
+    sql += " ORDER BY created_at DESC";
 
     const [rows] = await pool.execute(sql, params);
 
@@ -138,7 +131,6 @@ exports.exportLogs = async (req, res) => {
     }
 
     if (format === "excel") {
-      // Export as Excel
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet("Audit Logs");
       sheet.columns = Object.keys(rows[0]).map(col => ({ header: col, key: col }));
@@ -149,7 +141,6 @@ exports.exportLogs = async (req, res) => {
       await workbook.xlsx.write(res);
       res.end();
     } else {
-      // Default → CSV
       const parser = new Parser();
       const csv = parser.parse(rows);
 
@@ -162,3 +153,4 @@ exports.exportLogs = async (req, res) => {
     res.status(500).json({ error: "Failed to export logs" });
   }
 };
+

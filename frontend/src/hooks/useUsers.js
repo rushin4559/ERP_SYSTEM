@@ -4,6 +4,7 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  deleteMultipleUsers
 } from "../api/authadmin/user";
 import { toast } from "react-toastify";
 
@@ -73,20 +74,19 @@ export default function useUsers() {
     try {
       if (editingUser) {
         const updated = await updateUser(editingUser.id, formData);
-        setUsers((prev) =>
-          prev.map((u) => (u.id === editingUser.id ? updated : u))
-        );
+        await fetchAllUsers();
         toast.success("User updated successfully!");
         return updated;
       } else {
         const newUser = await createUser(formData);
-        setUsers((prev) => [newUser, ...prev]);
+        await fetchAllUsers();
         toast.success("User created successfully!");
         return newUser;
       }
     } catch (err) {
-      console.error("Error saving user:", err);
-      toast.error(err?.response?.data?.message || "Failed to save user.");
+      console.log("Error saving user:", err?.response?.data?.error || err?.response?.data?.message);
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to save user.");
+
       throw err;
     } finally {
       setLoading(false);
@@ -96,16 +96,41 @@ export default function useUsers() {
   // Single delete
   const handleDeleteSingle = async (id) => {
     if (!id) return;
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    const i = users.findIndex((u) => u.id === id);
+    if (i === -1) return;
+    if (!window.confirm(`Are you sure you want to delete ${users[i].username}?`)) return;
 
     setLoading(true);
     try {
       const res = await deleteUser(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      await fetchAllUsers();
       toast.success(res.message || "User deleted successfully!");
     } catch (err) {
       console.error("Error deleting user:", err);
       toast.error(err?.response?.data?.message || "Failed to delete user.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Multiple delete
+  const handleDeleteMultiple = async () => {
+    if (selectedIds.length === 0) return;
+    const userNames = users
+      .filter((u) => selectedIds.includes(u.id))
+      .map((u) => u.username)
+      .join(", ");
+    if (!window.confirm(`Are you sure you want to delete ${userNames}?`)) return;
+
+    setLoading(true);
+    try {
+      const res = await deleteMultipleUsers(selectedIds);
+      await fetchAllUsers();
+      setSelectedIds([]);
+      toast.success(res.message || `${selectedIds.length} user(s) deleted successfully.`);
+    } catch (err) {
+      console.error("Error deleting users:", err);
+      toast.error(err?.response?.data?.message || "Failed to delete users.");
     } finally {
       setLoading(false);
     }
@@ -140,6 +165,7 @@ export default function useUsers() {
     handleUpdate,
     handleFormSubmit,
     handleDeleteSingle,
+    handleDeleteMultiple,
     handleApplyFilters,
   };
 }

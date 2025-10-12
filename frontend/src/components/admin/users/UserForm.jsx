@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { createUser, updateUser } from "../../../api/authadmin/user";
 import { toast } from "react-toastify";
 
-export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {
+export default function UserForm({ isOpen, onClose, onSuccess, onSubmit, initialData }) {
   const [form, setForm] = useState({ username: "", password: "", role: "" });
   const [loading, setLoading] = useState(false);
 
@@ -20,36 +20,22 @@ export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleLocalSubmit = async (e) => {
+    e.preventDefault();
 
-  // जर role admin असेल तर आधी confirm विचार
-  if (form.role === "admin") {
-    const confirmed = window.confirm(
-      "⚠️ You are assigning 'Admin' role. This is sensitive. Are you sure?"
-    );
-    if (!confirmed) {
-      return; // cancel कर
+    if (form.role === "admin") {
+      const confirmed = window.confirm("⚠️ You are assigning 'Admin' role. This is sensitive. Are you sure?");
+      if (!confirmed) return;
     }
-  }
 
-  setLoading(true);
-  try {
-    if (initialData) {
-      await updateUser(initialData.id, { username: form.username, role: form.role });
-      toast.success("User updated successfully!");
-    } else {
-      await createUser(form);
-      toast.success("User created successfully!");
+    // Call the injected handleFormSubmit with form data
+    try {
+      await onSubmit(form);
+      onClose();
+    } catch (err) {
+      // error toast handled in useUsers.handleFormSubmit
     }
-    onSuccess();
-    onClose();
-  } catch (err) {
-    toast.error(err.response?.data?.error || "Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const isDisabled = !form.username || (!initialData && !form.password) || !form.role;
 
@@ -62,7 +48,7 @@ export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {
           {initialData ? "Update User" : "Create User"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleLocalSubmit} className="space-y-5">
           {/* Username */}
           <input
             type="text"
@@ -109,11 +95,10 @@ export default function UserForm({ isOpen, onClose, onSuccess, initialData }) {
             <button
               type="submit"
               disabled={isDisabled || loading}
-              className={`px-4 py-2 rounded-lg text-white text-sm font-medium transition ${
-                isDisabled || loading
+              className={`px-4 py-2 rounded-lg text-white text-sm font-medium transition ${isDisabled || loading
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-blue-600 hover:bg-blue-700"
-              }`}
+                }`}
             >
               {loading ? "Saving..." : initialData ? "Update" : "Create"}
             </button>

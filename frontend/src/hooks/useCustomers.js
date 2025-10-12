@@ -30,7 +30,7 @@ export default function useCustomers() {
     created_to: "",
     updated_from: "",
     updated_to: "",
-    sort_by: "created_at",
+    sort_by: "updated_at",
     sort_order: "desc",
   });
 
@@ -73,14 +73,12 @@ export default function useCustomers() {
     try {
       if (editingCustomer) {
         const updatedCustomer = await updateCustomer(editingCustomer.id, formData);
-        setCustomers((prev) =>
-          prev.map((c) => (c.id === editingCustomer.id ? updatedCustomer : c))
-        );
+        await fetchCustomers();
         toast.success("Customer updated successfully!");
         return updatedCustomer;
       } else {
         const newCustomer = await createCustomer(formData);
-        setCustomers((prev) => [newCustomer, ...prev]);
+        await fetchCustomers();
         toast.success("Customer created successfully!");
         return newCustomer;
       }
@@ -96,12 +94,14 @@ export default function useCustomers() {
   // Single delete
   const handleDeleteSingle = async (id) => {
     if (!id) return;
-    if (!window.confirm("Are you sure you want to delete this customer?")) return;
+    const i = customers.findIndex((c) => c.id === id);
+    if (i === -1) return;
+    if (!window.confirm(`Are you sure you want to delete ${customers[i].customer_name}?`)) return;
 
     setLoading(true);
     try {
       const res = await deleteCustomer(id);
-      setCustomers((prev) => prev.filter((c) => c.id !== id));
+      await fetchCustomers();
       toast.success(res.message || "Customer deleted successfully!");
     } catch (err) {
       console.error("Error deleting customer:", err);
@@ -114,12 +114,16 @@ export default function useCustomers() {
   // Multiple delete
   const handleDeleteMultiple = async () => {
     if (selectedIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} customer(s)?`)) return;
+    const customerNames = customers
+      .filter((c) => selectedIds.includes(c.id))
+      .map((c) => c.customer_name)
+      .join(", ");
+    if (!window.confirm(`Are you sure you want to delete ${customerNames}?`)) return;
 
     setLoading(true);
     try {
       const res = await deleteMultipleCustomers(selectedIds);
-      setCustomers((prev) => prev.filter((c) => !selectedIds.includes(c.id)));
+      await fetchCustomers();
       setSelectedIds([]);
       toast.success(res.message || `${selectedIds.length} customer(s) deleted successfully.`);
     } catch (err) {

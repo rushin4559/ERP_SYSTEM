@@ -26,3 +26,10 @@ export const deleteUser = async (id) => {
   const res = await axios.delete(`/admin/delete-user/${id}`);
   return res.data;
 };
+// Delete multiple users
+export const deleteMultipleUsers = async (ids) => {
+  const res = await axios.delete('/admin/delete-multiple-users', { data: { ids } });
+  return res.data;
+};
+
+

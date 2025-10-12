@@ -19,6 +19,7 @@ export default function Users() {
         handleUpdate,
         handleFormSubmit,
         handleDeleteSingle,
+        handleDeleteMultiple,
     } = useUsers();
 
     return (
@@ -31,7 +32,7 @@ export default function Users() {
                 <section>
                     <HeaderActionsButtons
                         selectedCount={selectedIds.length}
-                        onDeleteMultiple={() => alert("Multiple delete not implemented yet.")}
+                        onDeleteMultiple={handleDeleteMultiple}
                         onOpenCreate={handleCreate}
                         loading={loading}
                     />

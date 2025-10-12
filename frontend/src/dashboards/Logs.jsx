@@ -63,16 +63,10 @@ export default function Logs() {
         </section>
 
         <section>
-          {/* <LogFilters
-            filters={filters}
-            onApply={handleApplyFilters}
-            onReset={() => setFilters({})}
-            onExport={handleExport}
-          /> */}
           <SharedFilter
             onApply={handleApply}
             onReset={() => {
-              const cleared = { search: "", from: "", to: "", status: "", service: "", sort: "date_desc" };
+              const cleared = { search: "", from: "", to: "",  status: "", service: "", action: "", sort: "date_desc" };
               setLocalFilters(cleared); // reset local inputs
               setFilters(cleared);      // reset global filters triggers reload once
             }}
@@ -101,6 +95,16 @@ export default function Logs() {
               { header: "Service", key: "service" },
               { header: "Status", key: "status" },
             ]}
+            onSortChange={(key, order) => {
+              setFilters((prev) => ({
+                ...prev,
+                sort_by: key,
+                order: order,
+              }));
+              setPage(1); // Reset page on sort change
+            }}
+            initialSortBy={filters.sort_by}
+            initialOrder={filters.order}
           />
 
         </section>

@@ -34,26 +34,17 @@ export default function Customers() {
     handleApplyFilters,
   } = useCustomers();
 
-  // Responsive: Use card list for mobile
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const [localFilters, setLocalFilters] = useState(filters);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
   // Keep these in sync on mount and when global filters change from outside
   useEffect(() => {
     setLocalFilters(filters);
   }, [filters]);
 
   // Export customers CSV handler with confirmation
-  const handleExport = async (exportFilters) => {
+  const handleExport = async () => {
     try {
-      const { meta } = await getCustomers({ ...exportFilters, page: 1, limit: 1 });
+      const { meta } = await getCustomers({ ...localFilters, page: 1, limit: 1 });
 
       if (meta.total === 0) {
         alert("No customers found with the selected filters.");
@@ -63,7 +54,7 @@ export default function Customers() {
       const confirmed = window.confirm(`Export ${meta.total} customers matching the selected filters to CSV?`);
 
       if (confirmed) {
-        await exportCustomersToCsv(exportFilters);
+        await exportCustomersToCsv(localFilters);
       }
     } catch (error) {
       alert("Failed to export customers: " + error.message);
@@ -129,17 +120,7 @@ export default function Customers() {
         </section>
 
         <section className="rounded-lg bg-white shadow-md p-4 overflow-x-auto">
-          {isMobile ? (
-            <CustomerCardList
-              customers={customers}
-              loading={loading}
-              selectedIds={selectedIds}
-              setSelectedIds={setSelectedIds}
-              onEdit={handleUpdate}
-              onDelete={handleDeleteSingle}
-            />
-          ) : (
-            <DataTable
+          <DataTable
               data={customers}
               loading={loading}
               selectedIds={selectedIds}
@@ -163,8 +144,19 @@ export default function Customers() {
                 { header: "Created At", key: "created_at" },
                 { header: "Updated At", key: "updated_at" },
               ]}
+              onSortChange={(key, order) => {
+                // Update filters with new sort options
+                setFilters((prev) => ({
+                  ...prev,
+                  sort_by: key,
+                  order: order,
+                }));
+                // Reset to first page on sort change for better UX
+                setPage(1);
+              }}
+              initialSortBy={filters.sort_by}
+              initialOrder={filters.order}
             />
-          )}
         </section>
 
         <section>

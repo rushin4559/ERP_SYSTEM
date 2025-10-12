@@ -17,9 +17,11 @@ export default function useLogs() {
     search: "",
     status: "",
     service: "",
+    action: "",
     from: "",
     to: "",
-    sort: "date_desc",
+    sort_by: "created_at", // default column
+    order: "desc",         // default order
   });
 
   const fetchLogs = async () => {
@@ -31,9 +33,10 @@ export default function useLogs() {
         username: filters.search,
         status: filters.status,
         service: filters.service,
+        action: filters.action,
         from: filters.from,
         to: filters.to,
-        sort: filters.sort,
+        sort: `${filters.sort_by}:${filters.order}`,
       };
       console.log("Fetching logs with params:", params);
       const data = await getLogs(params);
@@ -59,22 +62,69 @@ export default function useLogs() {
     setPage(1);
   };
 
+  const filtersToShortString = (filters) => {
+    const parts = [];
+
+    if (filters.search) {
+      parts.push(`s-${filters.search.substring(0, 5)}`);  // search, short
+    }
+    if (filters.status) {
+      parts.push(`st-${filters.status.substring(0, 3)}`); // status short
+    }
+    if (filters.service) {
+      parts.push(`svc-${filters.service.substring(0, 3)}`); // service short
+    }
+    if (filters.action) {
+      parts.push(`a-${filters.action.substring(0, 5)}`);
+    }
+    if (filters.from) {
+      parts.push(`f-${filters.from.replace(/-/g, '')}`); // from date no dash
+    }
+    if (filters.to) {
+      parts.push(`t-${filters.to.replace(/-/g, '')}`);  // to date no dash
+    }
+
+    return parts.join('_');
+  }
+
+
   const handleExport = async (exportParams) => {
     try {
-      const blob = await exportLogs(exportParams);
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "logs_export.csv");
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      toast.success("Logs exported successfully.");
+      // Get total count to show in confirm dialog
+      const data = await getLogs({ ...exportParams, page: 1, limit: 1 });
+      const total = data.total || (data.data ? data.data.length : 0);
+
+      if (total === 0) {
+        alert("No logs found with the selected filters.");
+        return;
+      }
+
+      const confirmed = window.confirm(`Export ${total} logs matching the selected filters to CSV?`);
+
+      if (confirmed) {
+        const blob = await exportLogs(exportParams);
+
+        // Create short filter summary string
+        const shortFilters = filtersToShortString(exportParams);
+        const filename = `logs_${shortFilters || 'all'}_${Date.now()}.csv`;
+
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast.success("Logs exported successfully.");
+      }
     } catch (err) {
       console.error("Error exporting logs:", err);
       toast.error("Failed to export logs.");
     }
   };
+
 
   return {
     logs,

@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const customerApi = axios.create({
-  baseURL: import.meta.env.VITE_CUSTOMER_API_URL || "http://192.168.0.111:3001/api",
+  baseURL: import.meta.env.VITE_CUSTOMER_API_URL || "http://192.168.0.104:3001/api",
 });
 
 

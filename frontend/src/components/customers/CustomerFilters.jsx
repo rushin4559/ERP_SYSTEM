@@ -57,7 +57,7 @@ export default function CustomerFilters({ filters, onChange }) {
               name={name}
               value={filters[name]}
               onChange={onChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition"
             />
           </div>
         ))}

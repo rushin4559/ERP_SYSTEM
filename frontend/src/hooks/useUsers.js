@@ -4,7 +4,7 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  deleteMultipleUsers
+  deleteMultipleUsers,
 } from "../api/authadmin/user";
 import { toast } from "react-toastify";
 
@@ -15,34 +15,34 @@ export default function useUsers() {
   const [editingUser, setEditingUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Pagination (if needed later)
+  // Pagination states
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
 
-  // Filters (basic example; extend as needed)
+  // Filters including sorting and date filters
   const [filters, setFilters] = useState({
     username: "",
     role: "",
+    created_at_min: "",
+    created_at_max: "",
+    sort_by: "created_at",
+    sort_order: "desc",
   });
 
-  // Fetch users (no pagination in your API so far; can extend if backend supports)
-  const fetchAllUsers = async () => {
+  // Fetch users with pagination, filters, sorting from backend
+  const fetchUsersWithFilters = async () => {
     setLoading(true);
     try {
-      const allUsers = await fetchUsers();
-      // Optional client-side filtering for username and role
-      let filteredUsers = allUsers;
-      if (filters.username) {
-        filteredUsers = filteredUsers.filter(user =>
-          user.username.toLowerCase().includes(filters.username.toLowerCase())
-        );
-      }
-      if (filters.role) {
-        filteredUsers = filteredUsers.filter(user => user.role === filters.role);
-      }
-      setUsers(filteredUsers);
-      setTotalPages(1);
+      const { users: rows, meta } = await fetchUsers({
+        page,
+        limit,
+        ...filters,
+      });
+      setUsers(rows);
+      setTotalPages(meta.totalPages);
+      setTotalUsers(meta.total);
     } catch (err) {
       console.error("Error fetching users:", err);
       toast.error("Failed to fetch users.");
@@ -52,9 +52,9 @@ export default function useUsers() {
   };
 
   useEffect(() => {
-    fetchAllUsers();
+    fetchUsersWithFilters();
     // eslint-disable-next-line
-  }, [filters]);
+  }, [page, limit, filters]);
 
   // Open create modal
   const handleCreate = () => {
@@ -74,19 +74,22 @@ export default function useUsers() {
     try {
       if (editingUser) {
         const updated = await updateUser(editingUser.id, formData);
-        await fetchAllUsers();
+        await fetchUsersWithFilters();
         toast.success("User updated successfully!");
         return updated;
       } else {
         const newUser = await createUser(formData);
-        await fetchAllUsers();
+        await fetchUsersWithFilters();
         toast.success("User created successfully!");
         return newUser;
       }
     } catch (err) {
-      console.log("Error saving user:", err?.response?.data?.error || err?.response?.data?.message);
-      toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to save user.");
-
+      console.error("Error saving user:", err);
+      toast.error(
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to save user."
+      );
       throw err;
     } finally {
       setLoading(false);
@@ -98,12 +101,13 @@ export default function useUsers() {
     if (!id) return;
     const i = users.findIndex((u) => u.id === id);
     if (i === -1) return;
-    if (!window.confirm(`Are you sure you want to delete ${users[i].username}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ${users[i].username}?`))
+      return;
 
     setLoading(true);
     try {
       const res = await deleteUser(id);
-      await fetchAllUsers();
+      await fetchUsersWithFilters();
       toast.success(res.message || "User deleted successfully!");
     } catch (err) {
       console.error("Error deleting user:", err);
@@ -120,14 +124,19 @@ export default function useUsers() {
       .filter((u) => selectedIds.includes(u.id))
       .map((u) => u.username)
       .join(", ");
-    if (!window.confirm(`Are you sure you want to delete ${userNames}?`)) return;
+    if (
+      !window.confirm(`Are you sure you want to delete ${userNames}?`)
+    )
+      return;
 
     setLoading(true);
     try {
       const res = await deleteMultipleUsers(selectedIds);
-      await fetchAllUsers();
+      await fetchUsersWithFilters();
       setSelectedIds([]);
-      toast.success(res.message || `${selectedIds.length} user(s) deleted successfully.`);
+      toast.success(
+        res.message || `${selectedIds.length} user(s) deleted successfully.`
+      );
     } catch (err) {
       console.error("Error deleting users:", err);
       toast.error(err?.response?.data?.message || "Failed to delete users.");
@@ -136,13 +145,9 @@ export default function useUsers() {
     }
   };
 
-  // Multiple delete (optional, add API if backend supports)
-  // Could implement similar to handleDeleteMultiple in useCustomers
-
-  // Apply filters
+  // Apply filters and reset to first page
   const handleApplyFilters = (newFilters) => {
     setFilters(newFilters);
-    // reset page if you plan pagination later
     setPage(1);
   };
 
@@ -155,6 +160,7 @@ export default function useUsers() {
     page,
     limit,
     totalPages,
+    totalUsers,
     filters,
     setSelectedIds,
     setFormOpen,

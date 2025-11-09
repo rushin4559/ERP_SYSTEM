@@ -49,17 +49,78 @@ async function createUser(req, res) {
 async function listUsers(req, res) {
   try {
     const pool = getDB();
-    // select only safe fields (no password hash!)
-    const [rows] = await pool.query(
-      "SELECT id, username, role, created_at FROM users ORDER BY created_at DESC"
-    );
 
-    return res.json({
-      users: rows
+    let {
+      page = 1,
+      limit = 10,
+      username,
+      role,
+      created_at_min,
+      created_at_max,
+      sort_by = "created_at",
+      order = "desc",
+    } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const offset = (page - 1) * limit;
+
+    // Base query components
+    let baseQuery = "SELECT id, username, role, created_at FROM users";
+    let countQuery = "SELECT COUNT(*) as total FROM users";
+
+    // Filters array for WHERE clauses
+    const filters = [];
+    const params = [];
+
+    // Build filters and params
+    if (username) {
+      filters.push("username LIKE ?");
+      params.push(`%${username}%`);
+    }
+    if (role) {
+      filters.push("role = ?");
+      params.push(role);
+    }
+    if (created_at_min) {
+      filters.push("created_at >= ?");
+      params.push(created_at_min);
+    }
+    if (created_at_max) {
+      filters.push("created_at <= ?");
+      params.push(created_at_max);
+    }
+
+    // Compose WHERE clause if any filters exist
+    const whereClause = filters.length ? " WHERE " + filters.join(" AND ") : "";
+
+    // Finalize queries with filters
+    const finalQuery = `${baseQuery}${whereClause} ORDER BY ${sort_by} ${order} LIMIT ? OFFSET ?`;
+    const finalCountQuery = `${countQuery}${whereClause}`;
+
+    // Add pagination params at the end for LIMIT and OFFSET
+    const queryParams = [...params, limit, offset];
+
+    // Execute main query
+    const [rows] = await pool.query(finalQuery, queryParams);
+
+    // Execute count query to get total records matching filters
+    const [countResult] = await pool.query(finalCountQuery, params);
+    const total = countResult[0].total;
+
+    return res.status(200).json({
+      success: true,
+      users: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (err) {
-    console.error("List users error:", err.message);
-    return res.status(500).json({ error: "Server error" });
+    console.error("List users error:", err);
+    return res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 }
 

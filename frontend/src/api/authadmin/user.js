@@ -2,9 +2,13 @@
 import axios from "./axios";
 
 // List all users
-export const fetchUsers = async () => {
-  const res = await axios.get("/admin/users"); // assume backend route
-  return res.data.users;
+export const fetchUsers = async (params) => {
+  const res = await axios.get("/admin/users", { params });
+  // Assuming your backend returns { success, users, meta }
+  return {
+    users: res.data.users,
+    meta: res.data.meta,
+  };
 };
 
 // Create new user
